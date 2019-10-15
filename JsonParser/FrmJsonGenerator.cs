@@ -13,6 +13,7 @@ namespace JsonParser
 {
     public partial class FrmJsonGenerator : Form
     {
+        Stream fileStream;
         public FrmJsonGenerator()
         {
             InitializeComponent();
@@ -22,60 +23,72 @@ namespace JsonParser
         {
             var fileContent = string.Empty;
             var filePath = string.Empty;
-            StringBuilder json = new StringBuilder("[");
-            int rootId = 0;
-            int firstChildId = 0;
-            int SecondChildId = 0;
+            
+            
 
 
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.InitialDirectory = "c:\\";
+                openFileDialog.InitialDirectory = "D:\\";
                 openFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
                 openFileDialog.FilterIndex = 2;
                 openFileDialog.RestoreDirectory = true;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    filePath = openFileDialog.FileName;
-
-                    var fileStream = openFileDialog.OpenFile();
-
-                    using (StreamReader reader = new StreamReader(fileStream))
-                    {
-                        string line;
-
-                        while ((line = reader.ReadLine()) != null)
-                        {
-                            if (line.Trim().StartsWith("!"))
-                            {
-                                json.Append(MakeRoot(line));
-                            }
-                            else if (line.Trim().StartsWith("@"))
-                            {
-                                ++rootId;
-                                json.Append(MakeChild(rootId, line));
-                            }
-                            else if (line.Trim().StartsWith("#"))
-                            {
-                                ++firstChildId;
-                                json.Append(MakeChild(firstChildId, line));
-                            }
-                            else
-                            {
-                                ++SecondChildId;
-                                json.Append(MakeLeaf(SecondChildId, line));
-                            }
-                            json.Append(line);
-                        }
-                        //fileContent = reader.ReadToEnd();
-                    }
+                   // filePath = openFileDialog.FileName;
+                    fileStream = openFileDialog.OpenFile();
                 }
+              var json=  ReadFile();
+                WriteFile(json);
             }
-
-
         }
 
+        private void WriteFile(string jsonString)
+        {
+            string path= @"D:\Output.josn";
+            using (StreamWriter writer = new StreamWriter(path)) {
+                writer.Write(jsonString);
+            }
+        }
+
+        private string ReadFile() {
+            StringBuilder json = new StringBuilder("[");
+            int rootId = 0;
+            int firstChildId = 0;
+            int SecondChildId = 0;
+            using (StreamReader reader = new StreamReader(fileStream))
+            {
+                string line;
+
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line.Trim().StartsWith("!"))
+                    {
+                        json.Append(MakeRoot(line));
+                    }
+                    else if (line.Trim().StartsWith("@"))
+                    {
+                        ++rootId;
+                        json.Append(MakeChild(rootId, line));
+                    }
+                    else if (line.Trim().StartsWith("#"))
+                    {
+                        ++firstChildId;
+                        json.Append(MakeChild(firstChildId, line));
+                    }
+                    else
+                    {
+                        ++SecondChildId;
+                        json.Append(MakeLeaf(SecondChildId, line));
+                    }
+                    json.Append(line);
+                }
+
+                //fileContent = reader.ReadToEnd();
+                return json.ToString();
+            }
+        }
 
         private string MakeRoot(string name)
         {

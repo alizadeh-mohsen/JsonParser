@@ -133,9 +133,17 @@ namespace JsonParser
                 return;
             }
             string currentSymbol = CategoryArray[i].Substring(0, 1);
-            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) > SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal))
+            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) >
+                SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal))
             {
-                json.AppendLine("}],");
+                //TODO
+                for (int j = i; i <= 0; i--)
+                    if (CategoryArray[j].TrimStart().StartsWith(previousSymbol))
+                    {
+                        {
+                            json.AppendLine("}],");
+                        }
+                    }
             }
         }
 
@@ -145,24 +153,27 @@ namespace JsonParser
             var name = CategoryArray[0];
             var nameTrim = name.TrimStart('!');
             StringBuilder sb = new StringBuilder("{");
-            sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
+            //sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
+            sb.Append(nameTrim);
             //sb.Append("\"isActive\": true");
             //sb.AppendLine("\"parent\": null,");
             //sb.AppendLine("\"isRoot\": true,");
             //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
-            sb.AppendLine("\"children\": [");
+            //sb.AppendLine("\"children\": [");
+            sb.AppendLine("[");
             return sb.ToString();
         }
         private string MakeChild(int parentId, string name)
         {
             var nameTrim = name.TrimStart(new char[] { '@', '#' });
             StringBuilder sb = new StringBuilder("{");
-            sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
+            sb.Append(nameTrim);
             //sb.Append("\"isActive\": true");
             //sb.AppendFormat("\"parent\": {0},", parentId);
             //sb.AppendLine("\"isRoot\": false,");
             //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
-            sb.AppendLine("\"children\": [");
+            //sb.AppendLine("\"children\": [");
+            sb.AppendLine("[");
             return sb.ToString();
         }
         private int MakeLeaf(int parentId, int i)
@@ -175,12 +186,13 @@ namespace JsonParser
                     ++parentId;
                     var nameTrim = item.TrimStart('#');
                     json.Append("{");
-                    json.AppendFormat("\"name\": \"{0}\",", nameTrim);
+                    json.Append(nameTrim);
                     //sb.Append("\"isActive\": true");
                     //sb.AppendFormat("\"parent\": {0},", parentId);
                     //sb.AppendLine("\"isRoot\": false,");
                     //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
-                    json.Append("\"isLeaf\": true},");
+                    //json.Append("\"isLeaf\": true},");
+                    json.Append("},");
                     i++;
                 }
                 else

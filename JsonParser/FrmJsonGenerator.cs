@@ -14,11 +14,22 @@ namespace JsonParser
     public partial class FrmJsonGenerator : Form
     {
         Stream fileStream;
+        string filePath = @"D:\category.txt";
         StreamReader reader;
+        string[] CategoryArray;
+        StringBuilder json = new StringBuilder("[");
+        int rootId;
+        int firstChildId;
+        int SecondChildId;
+        private string previousSymbol;
+        private string closing = "]},";
+        private string SymbolOrder = "!@#$";
         public FrmJsonGenerator()
         {
             InitializeComponent();
         }
+
+        #region FileOperation
 
         private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -34,12 +45,21 @@ namespace JsonParser
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    // filePath = openFileDialog.FileName;
+                    filePath = openFileDialog.FileName;
                     fileStream = openFileDialog.OpenFile();
                 }
-                var json = ReadFile();
-                WriteFile(json);
-                label1.Text = "Done";
+                ReadFile();
+                Process();
+                WriteFile(json.ToString());
+                textBox1.Text = json.ToString();
+            }
+        }
+
+        private void ReadFile()
+        {
+            using (reader = new StreamReader(fileStream))
+            {
+                CategoryArray = File.ReadAllLines(filePath);
             }
         }
 
@@ -52,43 +72,77 @@ namespace JsonParser
             }
         }
 
-        private string ReadFile()
+        #endregion
+
+        private void AddClsoing()
         {
-            StringBuilder json = new StringBuilder("[");
-            int rootId = 0;
-            int firstChildId = 0;
-            int SecondChildId = 0;
-            string currentIcon = "";
-            string oldIcon = "!";
-            string line;
-
-            using (reader = new StreamReader(fileStream))
-            {
-                json.AppendLine(MakeRoot(reader.ReadLine()));
-
-                while ((line = reader.ReadLine()) != null)
-                {
-                    var item = line.Trim();
-                    if (item.StartsWith("@") || item.StartsWith("#"))
-                    {
-                        ++rootId;
-                        json.AppendLine(MakeChild(rootId, item));
-                    }
-                    if (item.StartsWith("$"))
-                    {
-                        ++SecondChildId;
-                        json.AppendLine(MakeLeaf(SecondChildId, item));
-                        json.AppendLine("}]");
-
-                    }
-                }
-                json.AppendLine("}]");
-            }
-            return json.ToString();
+            json.Length--;
+            json.AppendLine(closing);
         }
 
-        private string MakeRoot(string name)
+        private void Process()
         {
+            json.AppendLine(MakeRoot());
+            int i = 1;
+            while (i < CategoryArray.Length)
+            {
+                CloseObjects(i);
+                var item = CategoryArray[i].Trim();
+                if (item.StartsWith("@"))
+                {
+                    ++rootId;
+                    json.AppendLine(MakeChild(rootId, CategoryArray[i]));
+                    previousSymbol = "@";
+                    i++;
+                }
+                if (item.StartsWith("#"))
+                {
+                    ++firstChildId;
+                    json.AppendLine(MakeChild(firstChildId, CategoryArray[i]));
+                    previousSymbol = "#";
+                    i++;
+                }
+                if (item.StartsWith("$"))
+                {
+                    ++SecondChildId;
+                    i = MakeLeaf(SecondChildId, i);
+                    previousSymbol = "$";
+                }
+            }
+
+            CloseJson();
+        }
+
+        private void CloseJson()
+        {
+            json.AppendLine("]");
+            foreach (var item in CategoryArray)
+            {
+                if (item.TrimStart().StartsWith("@"))
+                {
+                    json.AppendLine("}]");
+                }
+            }
+            json.AppendLine("}]");
+        }
+
+        private void CloseObjects(int i)
+        {
+            if (previousSymbol == "$")
+            {
+                return;
+            }
+            string currentSymbol = CategoryArray[i].Substring(0, 1);
+            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) > SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal))
+            {
+                json.AppendLine("}],");
+            }
+        }
+
+        private string MakeRoot()
+        {
+            previousSymbol = "!";
+            var name = CategoryArray[0];
             var nameTrim = name.TrimStart('!');
             StringBuilder sb = new StringBuilder("{");
             sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
@@ -101,7 +155,7 @@ namespace JsonParser
         }
         private string MakeChild(int parentId, string name)
         {
-            var nameTrim = name.TrimStart('@');
+            var nameTrim = name.TrimStart(new char[] { '@', '#' });
             StringBuilder sb = new StringBuilder("{");
             sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
             //sb.Append("\"isActive\": true");
@@ -111,29 +165,31 @@ namespace JsonParser
             sb.AppendLine("\"children\": [");
             return sb.ToString();
         }
-        private string MakeLeaf(int parentId, string item)
+        private int MakeLeaf(int parentId, int i)
         {
-            var nameTrim = item.TrimStart('#');
-            StringBuilder sb = new StringBuilder("{");
-            sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
-            //sb.Append("\"isActive\": true");
-            //sb.AppendFormat("\"parent\": {0},", parentId);
-            //sb.AppendLine("\"isRoot\": false,");
-            //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
-            sb.AppendLine("\"isLeaf\": true},");
-            string line;
-            do
+            while (i < CategoryArray.Length)
             {
-                line = reader.ReadLine();
-                if (line.Trim().StartsWith("$"))
+                var item = CategoryArray[i];
+                if (item.Trim().StartsWith("$"))
                 {
                     ++parentId;
-                    sb.AppendLine(MakeLeaf(++parentId, line));
+                    var nameTrim = item.TrimStart('#');
+                    json.Append("{");
+                    json.AppendFormat("\"name\": \"{0}\",", nameTrim);
+                    //sb.Append("\"isActive\": true");
+                    //sb.AppendFormat("\"parent\": {0},", parentId);
+                    //sb.AppendLine("\"isRoot\": false,");
+                    //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
+                    json.Append("\"isLeaf\": true},");
+                    i++;
                 }
-            } while (line != null || line.StartsWith("$"));
-
-            return sb.ToString();
-
+                else
+                {
+                    AddClsoing();
+                    break;
+                }
+            }
+            return i;
         }
     }
 }

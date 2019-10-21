@@ -22,7 +22,7 @@ namespace JsonParser
         int firstChildId;
         int SecondChildId;
         private string previousSymbol;
-        private string closing = "]},";
+        private string closing = "]";
         private string SymbolOrder = "!@#$";
         public FrmJsonGenerator()
         {
@@ -57,10 +57,21 @@ namespace JsonParser
 
         private void ReadFile()
         {
+            string[] tempArray;
+            List<String> tempList = new List<string>();
             using (reader = new StreamReader(fileStream))
             {
-                CategoryArray = File.ReadAllLines(filePath);
+                tempArray = File.ReadAllLines(filePath);
+                
             }
+            int counter = 0;
+            foreach (string t in tempArray)
+            {
+                if (string.IsNullOrEmpty(t.TrimStart())) continue;
+                tempList.Add(t.TrimStart());
+                counter++;
+            }
+            CategoryArray = tempList.ToArray();
         }
 
         private void WriteFile(string jsonString)
@@ -88,6 +99,11 @@ namespace JsonParser
             {
                 CloseObjects(i);
                 var item = CategoryArray[i].Trim();
+                if (string.IsNullOrEmpty(item))
+                {
+                    i++;
+                    continue;
+                }
                 if (item.StartsWith("@"))
                 {
                     ++rootId;
@@ -128,22 +144,23 @@ namespace JsonParser
 
         private void CloseObjects(int i)
         {
-            if (previousSymbol == "$")
-            {
-                return;
-            }
+            //if (previousSymbol == "$")
+            //{
+            //    return;
+            //}
             string currentSymbol = CategoryArray[i].Substring(0, 1);
-            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) >
+            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) <
                 SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal))
             {
+                json.Append("},");
                 //TODO
-                for (int j = i; i <= 0; i--)
-                    if (CategoryArray[j].TrimStart().StartsWith(previousSymbol))
-                    {
-                        {
-                            json.AppendLine("}],");
-                        }
-                    }
+                //for (int j = i; i <= 0; i--)
+                //    if (CategoryArray[j].TrimStart().StartsWith(previousSymbol))
+                //    {
+                //        {
+                //            json.AppendLine("}],");
+                //        }
+                //    }
             }
         }
 
@@ -153,40 +170,46 @@ namespace JsonParser
             var name = CategoryArray[0];
             var nameTrim = name.TrimStart('!');
             StringBuilder sb = new StringBuilder("{");
-            //sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
-            sb.Append(nameTrim);
+            sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
+
             //sb.Append("\"isActive\": true");
             //sb.AppendLine("\"parent\": null,");
             //sb.AppendLine("\"isRoot\": true,");
             //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
-            //sb.AppendLine("\"children\": [");
-            sb.AppendLine("[");
+            sb.AppendLine("\"children\": [");
             return sb.ToString();
         }
+
         private string MakeChild(int parentId, string name)
         {
             var nameTrim = name.TrimStart(new char[] { '@', '#' });
             StringBuilder sb = new StringBuilder("{");
-            sb.Append(nameTrim);
+            sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
             //sb.Append("\"isActive\": true");
             //sb.AppendFormat("\"parent\": {0},", parentId);
             //sb.AppendLine("\"isRoot\": false,");
             //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
-            //sb.AppendLine("\"children\": [");
-            sb.AppendLine("[");
+            sb.AppendLine("\"children\": [");
+
             return sb.ToString();
         }
+
         private int MakeLeaf(int parentId, int i)
         {
             while (i < CategoryArray.Length)
             {
                 var item = CategoryArray[i];
+                if (string.IsNullOrEmpty(item))
+                {
+                    i++;
+                    continue;
+                }
                 if (item.Trim().StartsWith("$"))
                 {
                     ++parentId;
                     var nameTrim = item.TrimStart('#');
                     json.Append("{");
-                    json.Append(nameTrim);
+                    json.AppendFormat("\"name\": \"{0}\"", nameTrim);
                     //sb.Append("\"isActive\": true");
                     //sb.AppendFormat("\"parent\": {0},", parentId);
                     //sb.AppendLine("\"isRoot\": false,");

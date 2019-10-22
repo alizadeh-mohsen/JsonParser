@@ -13,23 +13,20 @@ namespace JsonParser
 {
     public partial class FrmJsonGenerator : Form
     {
-        Stream fileStream;
-        string filePath = @"D:\category.txt";
-        StreamReader reader;
+        FileStream fileStream;
         string[] CategoryArray;
-        StringBuilder json = new StringBuilder("[");
+        readonly StringBuilder json = new StringBuilder();
         int rootId;
         int firstChildId;
         int SecondChildId;
         private string previousSymbol;
-        private string closing = "]";
         private string SymbolOrder = "!@#$";
 
         public FrmJsonGenerator()
         {
             InitializeComponent();
         }
-      
+
         private void Process()
         {
             json.AppendLine(MakeRoot());
@@ -65,31 +62,16 @@ namespace JsonParser
                 }
             }
 
-            CloseJson();
-        }
-
-        private void CloseJson()
-        {
-            json.AppendLine("]}]}");
-            //foreach (var item in CategoryArray)
-            //{
-            //    if (item.TrimStart().StartsWith("@"))
-            //    {
-            //        json.AppendLine("}]");
-            //    }
-            //}
-
-            json.AppendLine("]}");
+            json.AppendLine("]}]}]}");
         }
 
         private void CloseObjects(int i)
         {
-            
-            string currentSymbol = CategoryArray[i].Substring(0, 1);
+            var currentSymbol = CategoryArray[i].Substring(0, 1);
             var symbolBack = SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) <
             SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal);
 
-            var symbolDiff= Math.Abs(SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) -
+            var symbolDiff = Math.Abs(SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) -
             SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal));
             if (symbolBack && symbolDiff == 1)
             {
@@ -100,35 +82,33 @@ namespace JsonParser
             {
                 json.Append("}]},");
             }
-    }
+        }
 
         private string MakeRoot()
         {
             previousSymbol = "!";
             var name = CategoryArray[0];
-            //var nameTrim = name.TrimStart('!');
-            var nameTrim = name.TrimStart();
+            var nameTrim = name.TrimStart('!');
             StringBuilder sb = new StringBuilder("{");
             sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
 
-            //sb.Append("\"isActive\": true");
-            //sb.AppendLine("\"parent\": null,");
-            //sb.AppendLine("\"isRoot\": true,");
-            //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
+            sb.Append("\"isActive\": true,");
+            sb.AppendLine("\"parent\": null,");
+            sb.AppendLine("\"isRoot\": true,");
+            sb.AppendFormat("\"searchIndex\": \"{0}\",", nameTrim);
             sb.AppendLine("\"children\": [");
             return sb.ToString();
         }
 
         private string MakeChild(int parentId, string name)
         {
-            //var nameTrim = name.TrimStart(new char[] { '@', '#' });
-            var nameTrim = name.TrimStart();
+            var nameTrim = name.TrimStart(new char[] { '@', '#' });
             StringBuilder sb = new StringBuilder("{");
             sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
-            //sb.Append("\"isActive\": true");
-            //sb.AppendFormat("\"parent\": {0},", parentId);
-            //sb.AppendLine("\"isRoot\": false,");
-            //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
+            sb.Append("\"isActive\": true,");
+            sb.AppendFormat("\"parent\": {0},", parentId);
+            sb.AppendLine("\"isRoot\": false,");
+            sb.AppendFormat("\"searchIndex\": \"{0}\",", nameTrim);
             sb.AppendLine("\"children\": [");
 
             return sb.ToString();
@@ -147,21 +127,22 @@ namespace JsonParser
                 if (item.Trim().StartsWith("$"))
                 {
                     ++parentId;
-                    //var nameTrim = item.TrimStart('#');
-                    var nameTrim = item.TrimStart();
+                    var nameTrim = item.TrimStart('#');
+                    
                     json.Append("{");
-                    json.AppendFormat("\"name\": \"{0}\"", nameTrim);
-                    //sb.Append("\"isActive\": true");
-                    //sb.AppendFormat("\"parent\": {0},", parentId);
-                    //sb.AppendLine("\"isRoot\": false,");
-                    //sb.AppendFormat("\"searchIndex\": \"{0}", nameTrim);
-                    //json.Append("\"isLeaf\": true},");
-                    json.Append("},");
+                    json.AppendFormat("\"name\": \"{0}\",", nameTrim);
+                    json.Append("\"isActive\": true,");
+                    json.AppendFormat("\"parent\": {0},", parentId);
+                    json.AppendLine("\"isRoot\": false,");
+                    json.AppendFormat("\"searchIndex\": \"{0}\",", nameTrim);
+                    json.Append("\"isLeaf\": true},");
+                    
                     i++;
                 }
                 else
                 {
-                    AddClsoing();
+                    json.Length--;
+                    json.AppendLine("]");
                     break;
                 }
             }
@@ -170,26 +151,17 @@ namespace JsonParser
             }
             return i;
         }
-        private void AddClsoing()
-        {
-            json.Length--;
-            json.AppendLine(closing);
-        }
 
-#region FileOperation
+        #region FileOperation
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Clipboard.SetText(json.ToString());
         }
 
-        
-
         private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             json.Length = 0;
             textBox1.Text = "";
-            var fileContent = string.Empty;
-            var filePath = string.Empty;
 
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
@@ -200,25 +172,20 @@ namespace JsonParser
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    filePath = openFileDialog.FileName;
-                    fileStream = openFileDialog.OpenFile();
+                    fileStream=   openFileDialog.OpenFile() as FileStream;
                 }
                 ReadFile();
                 Process();
-                //WriteFile(json.ToString());
                 textBox1.Text = json.ToString();
             }
         }
 
         private void ReadFile()
         {
-            string[] tempArray;
             List<String> tempList = new List<string>();
-            using (reader = new StreamReader(fileStream))
-            {
-                tempArray = File.ReadAllLines(filePath);
+            var file = @"D:\Category.txt";
+            var tempArray = File.ReadAllLines(file);
 
-            }
             int counter = 0;
             foreach (string t in tempArray)
             {
@@ -228,17 +195,14 @@ namespace JsonParser
             }
             CategoryArray = tempList.ToArray();
         }
-
-        private void WriteFile(string jsonString)
-        {
-            string path = @"D:\Output.josn";
-            using (StreamWriter writer = new StreamWriter(path))
-            {
-                writer.Write(jsonString);
-            }
-        }
-
         #endregion
+
+        private void convertToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ReadFile();
+            Process();
+            textBox1.Text = json.ToString();
+        }
     }
 }
 

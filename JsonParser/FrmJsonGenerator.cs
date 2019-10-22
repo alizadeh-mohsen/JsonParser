@@ -24,73 +24,12 @@ namespace JsonParser
         private string previousSymbol;
         private string closing = "]";
         private string SymbolOrder = "!@#$";
+
         public FrmJsonGenerator()
         {
             InitializeComponent();
         }
-
-        #region FileOperation
-
-        private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            var fileContent = string.Empty;
-            var filePath = string.Empty;
-
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
-            {
-                openFileDialog.InitialDirectory = "D:\\";
-                openFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
-                openFileDialog.FilterIndex = 2;
-                openFileDialog.RestoreDirectory = true;
-
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    filePath = openFileDialog.FileName;
-                    fileStream = openFileDialog.OpenFile();
-                }
-                ReadFile();
-                Process();
-                WriteFile(json.ToString());
-                textBox1.Text = json.ToString();
-            }
-        }
-
-        private void ReadFile()
-        {
-            string[] tempArray;
-            List<String> tempList = new List<string>();
-            using (reader = new StreamReader(fileStream))
-            {
-                tempArray = File.ReadAllLines(filePath);
-                
-            }
-            int counter = 0;
-            foreach (string t in tempArray)
-            {
-                if (string.IsNullOrEmpty(t.TrimStart())) continue;
-                tempList.Add(t.TrimStart());
-                counter++;
-            }
-            CategoryArray = tempList.ToArray();
-        }
-
-        private void WriteFile(string jsonString)
-        {
-            string path = @"D:\Output.josn";
-            using (StreamWriter writer = new StreamWriter(path))
-            {
-                writer.Write(jsonString);
-            }
-        }
-
-        #endregion
-
-        private void AddClsoing()
-        {
-            json.Length--;
-            json.AppendLine(closing);
-        }
-
+      
         private void Process()
         {
             json.AppendLine(MakeRoot());
@@ -139,30 +78,25 @@ namespace JsonParser
                     json.AppendLine("}]");
                 }
             }
-            json.AppendLine("}]");
+            json.AppendLine("}]}");
         }
 
         private void CloseObjects(int i)
         {
-            //if (previousSymbol == "$")
-            //{
-            //    return;
-            //}
+            
             string currentSymbol = CategoryArray[i].Substring(0, 1);
-            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) <
-                SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal))
+            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) -
+                SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal)==1)
             {
                 json.Append("},");
-                //TODO
-                //for (int j = i; i <= 0; i--)
-                //    if (CategoryArray[j].TrimStart().StartsWith(previousSymbol))
-                //    {
-                //        {
-                //            json.AppendLine("}],");
-                //        }
-                //    }
             }
-        }
+
+            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) -
+                SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal)==2)
+            {
+                json.Append("}]},");
+            }
+    }
 
         private string MakeRoot()
         {
@@ -224,8 +158,79 @@ namespace JsonParser
                     break;
                 }
             }
+            {
+                json.Length--;
+            }
             return i;
         }
+        private void AddClsoing()
+        {
+            json.Length--;
+            json.AppendLine(closing);
+        }
+
+        private void copyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetText(json.ToString());
+        }
+
+        #region FileOperation
+
+        private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            json.Length = 0;
+            textBox1.Text = "";
+            var fileContent = string.Empty;
+            var filePath = string.Empty;
+
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.InitialDirectory = "D:\\";
+                openFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
+                openFileDialog.FilterIndex = 2;
+                openFileDialog.RestoreDirectory = true;
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    filePath = openFileDialog.FileName;
+                    fileStream = openFileDialog.OpenFile();
+                }
+                ReadFile();
+                Process();
+                WriteFile(json.ToString());
+                textBox1.Text = json.ToString();
+            }
+        }
+
+        private void ReadFile()
+        {
+            string[] tempArray;
+            List<String> tempList = new List<string>();
+            using (reader = new StreamReader(fileStream))
+            {
+                tempArray = File.ReadAllLines(filePath);
+
+            }
+            int counter = 0;
+            foreach (string t in tempArray)
+            {
+                if (string.IsNullOrEmpty(t.TrimStart())) continue;
+                tempList.Add(t.TrimStart());
+                counter++;
+            }
+            CategoryArray = tempList.ToArray();
+        }
+
+        private void WriteFile(string jsonString)
+        {
+            string path = @"D:\Output.josn";
+            using (StreamWriter writer = new StreamWriter(path))
+            {
+                writer.Write(jsonString);
+            }
+        }
+
+        #endregion
     }
 }
 

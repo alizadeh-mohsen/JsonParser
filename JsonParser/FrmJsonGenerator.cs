@@ -70,29 +70,33 @@ namespace JsonParser
 
         private void CloseJson()
         {
-            json.AppendLine("]");
-            foreach (var item in CategoryArray)
-            {
-                if (item.TrimStart().StartsWith("@"))
-                {
-                    json.AppendLine("}]");
-                }
-            }
-            json.AppendLine("}]}");
+            json.AppendLine("]}]}");
+            //foreach (var item in CategoryArray)
+            //{
+            //    if (item.TrimStart().StartsWith("@"))
+            //    {
+            //        json.AppendLine("}]");
+            //    }
+            //}
+
+            json.AppendLine("]}");
         }
 
         private void CloseObjects(int i)
         {
             
             string currentSymbol = CategoryArray[i].Substring(0, 1);
-            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) -
-                SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal)==1)
+            var symbolBack = SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) <
+            SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal);
+
+            var symbolDiff= Math.Abs(SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) -
+            SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal));
+            if (symbolBack && symbolDiff == 1)
             {
                 json.Append("},");
             }
 
-            if (SymbolOrder.IndexOf(currentSymbol, StringComparison.Ordinal) -
-                SymbolOrder.IndexOf(previousSymbol, StringComparison.Ordinal)==2)
+            if (symbolBack && symbolDiff == 2)
             {
                 json.Append("}]},");
             }
@@ -102,7 +106,8 @@ namespace JsonParser
         {
             previousSymbol = "!";
             var name = CategoryArray[0];
-            var nameTrim = name.TrimStart('!');
+            //var nameTrim = name.TrimStart('!');
+            var nameTrim = name.TrimStart();
             StringBuilder sb = new StringBuilder("{");
             sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
 
@@ -116,7 +121,8 @@ namespace JsonParser
 
         private string MakeChild(int parentId, string name)
         {
-            var nameTrim = name.TrimStart(new char[] { '@', '#' });
+            //var nameTrim = name.TrimStart(new char[] { '@', '#' });
+            var nameTrim = name.TrimStart();
             StringBuilder sb = new StringBuilder("{");
             sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
             //sb.Append("\"isActive\": true");
@@ -141,7 +147,8 @@ namespace JsonParser
                 if (item.Trim().StartsWith("$"))
                 {
                     ++parentId;
-                    var nameTrim = item.TrimStart('#');
+                    //var nameTrim = item.TrimStart('#');
+                    var nameTrim = item.TrimStart();
                     json.Append("{");
                     json.AppendFormat("\"name\": \"{0}\"", nameTrim);
                     //sb.Append("\"isActive\": true");
@@ -169,12 +176,13 @@ namespace JsonParser
             json.AppendLine(closing);
         }
 
+#region FileOperation
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Clipboard.SetText(json.ToString());
         }
 
-        #region FileOperation
+        
 
         private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -197,7 +205,7 @@ namespace JsonParser
                 }
                 ReadFile();
                 Process();
-                WriteFile(json.ToString());
+                //WriteFile(json.ToString());
                 textBox1.Text = json.ToString();
             }
         }

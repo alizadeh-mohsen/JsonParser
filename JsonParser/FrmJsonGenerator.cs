@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace JsonParser
@@ -47,18 +42,23 @@ namespace JsonParser
                     previousSymbol = "@";
                     i++;
                 }
-                if (item.StartsWith("#"))
+                else if (item.StartsWith("#"))
                 {
                     ++firstChildId;
                     json.AppendLine(MakeChild(firstChildId, CategoryArray[i]));
                     previousSymbol = "#";
                     i++;
                 }
-                if (item.StartsWith("$"))
+                else if (item.StartsWith("$"))
                 {
                     ++SecondChildId;
                     i = MakeLeaf(SecondChildId, i);
                     previousSymbol = "$";
+                }
+                else
+                {
+                    MessageBox.Show("NO MATCH >> " + item);
+                    break;
                 }
             }
 
@@ -183,8 +183,8 @@ namespace JsonParser
         private void ReadFile()
         {
             List<String> tempList = new List<string>();
-            var file = @"D:\Category.txt";
-            var tempArray = File.ReadAllLines(file);
+            //var file = @"D:\Category.txt";
+            var tempArray = File.ReadAllLines(fileStream.Name);
 
             int counter = 0;
             foreach (string t in tempArray)

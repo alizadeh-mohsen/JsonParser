@@ -90,25 +90,20 @@ namespace JsonParser
             var name = CategoryArray[0];
             var nameTrim = name.TrimStart('!');
             StringBuilder sb = new StringBuilder("{");
-            sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
-
+            sb.AppendFormat($"\"name\": \"{nameTrim}\",");
             sb.Append("\"isActive\": true,");
-            sb.AppendLine("\"parent\": null,");
-            sb.AppendLine("\"isRoot\": true,");
-            sb.AppendFormat("\"searchIndex\": \"{0}\",", nameTrim);
+            sb.AppendLine("\"parentId\": null,");
             sb.AppendLine("\"children\": [");
             return sb.ToString();
         }
 
         private string MakeChild(int parentId, string name)
         {
-            var nameTrim = name.TrimStart(new char[] { '@', '#' });
+            var nameTrim = name.TrimStart('@', '#');
             StringBuilder sb = new StringBuilder("{");
-            sb.AppendFormat("\"name\": \"{0}\",", nameTrim);
+            sb.AppendFormat($"\"name\": \"{nameTrim}\",");
             sb.Append("\"isActive\": true,");
-            sb.AppendFormat("\"parent\": {0},", parentId);
-            sb.AppendLine("\"isRoot\": false,");
-            sb.AppendFormat("\"searchIndex\": \"{0}\",", nameTrim);
+            sb.AppendFormat($"\"parentId\": {parentId},");
             sb.AppendLine("\"children\": [");
 
             return sb.ToString();
@@ -127,16 +122,15 @@ namespace JsonParser
                 if (item.Trim().StartsWith("$"))
                 {
                     ++parentId;
-                    var nameTrim = item.TrimStart('#');
-                    
+                    var nameTrim = item.TrimStart(new char[] {'$', '#'});
+
                     json.Append("{");
-                    json.AppendFormat("\"name\": \"{0}\",", nameTrim);
+                    json.AppendFormat($"\"name\": \"{nameTrim}\",");
                     json.Append("\"isActive\": true,");
-                    json.AppendFormat("\"parent\": {0},", parentId);
-                    json.AppendLine("\"isRoot\": false,");
-                    json.AppendFormat("\"searchIndex\": \"{0}\",", nameTrim);
-                    json.Append("\"isLeaf\": true},");
+                    json.AppendFormat("\"parentId\": {0},", parentId);
                     
+                    json.Append("\"isLeaf\": true},");
+
                     i++;
                 }
                 else
@@ -152,31 +146,36 @@ namespace JsonParser
             return i;
         }
 
+
         #region FileOperation
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            stStatus.Text = "";
             Clipboard.SetText(json.ToString());
+            stStatus.Text = "Copied!";
         }
 
         private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            stStatus.Text = "";
             json.Length = 0;
             textBox1.Text = "";
 
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.InitialDirectory = "D:\\";
+                openFileDialog.InitialDirectory = "D:\\OjWorld\\Shop Category\\Gmarket\\Category";
                 openFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
                 openFileDialog.FilterIndex = 2;
                 openFileDialog.RestoreDirectory = true;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    fileStream=   openFileDialog.OpenFile() as FileStream;
+                    fileStream = openFileDialog.OpenFile() as FileStream;
                 }
                 ReadFile();
                 Process();
                 textBox1.Text = json.ToString();
+                stStatus.Text = "finished!";
             }
         }
 

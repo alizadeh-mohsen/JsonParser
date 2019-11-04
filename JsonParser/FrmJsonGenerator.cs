@@ -22,7 +22,7 @@ namespace JsonParser
             InitializeComponent();
         }
 
-        private void Process()
+        private bool Process()
         {
             json.AppendLine(MakeRoot());
             int i = 1;
@@ -57,12 +57,13 @@ namespace JsonParser
                 }
                 else
                 {
-                    MessageBox.Show("NO MATCH >> " + item);
-                    break;
+                    textBox1.Text = $"invalid item at line {i} >> {CategoryArray[i]}";
+                    return false;
                 }
             }
 
             json.AppendLine("]}]}]}");
+            return true;
         }
 
         private void CloseObjects(int i)
@@ -90,9 +91,9 @@ namespace JsonParser
             var name = CategoryArray[0];
             var nameTrim = name.TrimStart('!');
             StringBuilder sb = new StringBuilder("{");
-            sb.AppendFormat($"\"name\": \"{nameTrim}\",");
-            sb.Append("\"isActive\": true,");
-            sb.AppendLine("\"parentId\": null,");
+            sb.AppendFormat($"\"name\": \"{nameTrim.Trim()}\",");
+            //sb.Append("\"isActive\": true,");
+            //sb.AppendLine("\"parentId\": null,");
             sb.AppendLine("\"children\": [");
             return sb.ToString();
         }
@@ -101,9 +102,9 @@ namespace JsonParser
         {
             var nameTrim = name.TrimStart('@', '#');
             StringBuilder sb = new StringBuilder("{");
-            sb.AppendFormat($"\"name\": \"{nameTrim}\",");
-            sb.Append("\"isActive\": true,");
-            sb.AppendFormat($"\"parentId\": {parentId},");
+            sb.AppendFormat($"\"name\": \"{nameTrim.Trim()}\",");
+            //sb.Append("\"isActive\": true,");
+            //sb.AppendFormat($"\"parentId\": {parentId},");
             sb.AppendLine("\"children\": [");
 
             return sb.ToString();
@@ -122,13 +123,13 @@ namespace JsonParser
                 if (item.Trim().StartsWith("$"))
                 {
                     ++parentId;
-                    var nameTrim = item.TrimStart(new char[] {'$', '#'});
+                    var nameTrim = item.TrimStart(new char[] { '$', '#' });
 
                     json.Append("{");
-                    json.AppendFormat($"\"name\": \"{nameTrim}\",");
-                    json.Append("\"isActive\": true,");
-                    json.AppendFormat("\"parentId\": {0},", parentId);
-                    
+                    json.AppendFormat($"\"name\": \"{nameTrim.Trim()}\",");
+                    //json.Append("\"isActive\": true,");
+                    //json.AppendFormat("\"parentId\": {0},", parentId);
+
                     json.Append("\"isLeaf\": true},");
 
                     i++;
@@ -157,25 +158,42 @@ namespace JsonParser
 
         private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            stStatus.Text = "";
-            json.Length = 0;
-            textBox1.Text = "";
-
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            try
             {
-                openFileDialog.InitialDirectory = "D:\\OjWorld\\Shop Category\\Gmarket\\Category";
-                openFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
-                openFileDialog.FilterIndex = 2;
-                openFileDialog.RestoreDirectory = true;
+                stStatus.Text = "";
+                json.Length = 0;
+                textBox1.Text = "";
 
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                using (OpenFileDialog openFileDialog = new OpenFileDialog())
                 {
-                    fileStream = openFileDialog.OpenFile() as FileStream;
+                    openFileDialog.InitialDirectory = "D:\\OjWorld\\Shop Category\\Gmarket\\Category";
+                    openFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
+                    openFileDialog.FilterIndex = 2;
+                    openFileDialog.RestoreDirectory = true;
+
+                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        fileStream = openFileDialog.OpenFile() as FileStream;
+                    }
+                    ReadFile();
+                    if (ValidateJson())
+                    {
+                        if (Process())
+                        {
+                            textBox1.Text = json.ToString();
+                            Clipboard.SetText(json.ToString());
+                            stStatus.Text = fileStream.Name;
+                        }
+                    }
                 }
-                ReadFile();
-                Process();
-                textBox1.Text = json.ToString();
-                stStatus.Text = "finished!";
+            }
+            catch (Exception ex)
+            {
+                textBox1.Text = ex.Message;
+            }
+            finally
+            {
+                fileStream?.Close();
             }
         }
 
@@ -196,11 +214,17 @@ namespace JsonParser
         }
         #endregion
 
-        private void convertToolStripMenuItem_Click(object sender, EventArgs e)
+        private bool ValidateJson()
         {
-            ReadFile();
-            Process();
-            textBox1.Text = json.ToString();
+            for (int i = 0; i < CategoryArray.Length - 1; i++)
+            {
+                if (CategoryArray[i].StartsWith("#") && CategoryArray[i + 1].StartsWith("#"))
+                {
+                    textBox1.Text = $"invalid item at line {i} >> {CategoryArray[i]}";
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
